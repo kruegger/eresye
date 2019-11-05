@@ -1,0 +1,7 @@
+{application,eresye,
+             [{description,"ERlang Expert SYstem Engine"},
+              {vsn,"%VSN%"},
+              {modules,[%MODULES%]},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {licenses,["BSD"]}]}.

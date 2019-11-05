@@ -9,7 +9,7 @@ MODULES=eresye	\
 	eresye_ontology_resolver	\
 	eresye_tree_list
 
-EBIN_FILES=$(MODULES:%=../ebin/%.$(EMULATOR))
+EBIN_FILES=$(MODULES:%=../ebin/%.$(EMULATOR)) ../ebin/eresye.app
 ERLC_FLAGS+=-I../../ -I../include +debug_info
 
 #
@@ -23,3 +23,4 @@ debug:
 
 clean:
 	rm -f $(EBIN_FILES)
+	rm -f ../ebin/eresye.app

@@ -1,8 +1,5 @@
-%
-% eres_tree_list.erl
-%
-% ----------------------------------------------------------------------
-%
+%% ----------------------------------------------------------------------
+%%
 %%
 %%  ERESYE, an ERlang Expert SYstem Engine
 %%
@@ -79,7 +76,7 @@ child (Key, Parent_node, List) ->
     Children = element(3, Parent_node),
     search (Key, List, Children).
 
-search (Key, List, []) ->
+search (_Key, _List, []) ->
     false;
 search (Key, List, [Nth_element | T]) ->
     Elem = lists:nth(Nth_element, List),
@@ -99,17 +96,17 @@ search ({Tab, Fun},{{Tab, Fun},_,_,_,_})->
     true;
 search (Tab,{{Tab,_},_,_,_,_})->
     true;
-search (K, E) ->
+search (_K, _E) ->
     false.
 
 test (X, X) ->
     true;
-test (X, Y) ->
+test (_X, _Y) ->
     false.
 
 get_root ([]) ->
     nil;
-get_root ([Root | T]) ->
+get_root ([Root |_T]) ->
     case is_root(Root) of
         true ->
             Root;
@@ -119,12 +116,10 @@ get_root ([Root | T]) ->
 
 is_root ({root, _, _, _, _}) ->
     true;
-is_root (Node) ->
+is_root (_Node) ->
     false.
 
-% controlla se esiste un join_node legato all'alfa-memory Tab
-% restituisce true se ne esiste almeno uno, altrimenti false
-is_present (Tab, []) ->
+is_present (_Tab, []) ->
     false;
 is_present(Tab, [Node | T]) ->
     case catch  element(1, element(1, Node)) of % il primo elemento della lista
@@ -139,15 +134,8 @@ is_present(Tab, [Node | T]) ->
             end
     end.
 
-% restituisce la lista di tutti gli elementi in List associati alla
-% chiave Key. Se non esiste nessun elemento con la chiave richiesta
-% il risultato e' una lista vuota
-% Key = Tab
-% Key = {Tab, Join_fun}
-% Key = {p_node, Fun}
-% Key = {p_node, {Fun, _}}
 lookup_all (Key, List) ->
-    [Root | L] = List,
+    [_Root | L] = List,
     lists:foldl(fun(Elem, Result_list) ->
                         %Tab_elem =  element(1, element(1, Elem)),
                         case search(Key, Elem) of
@@ -159,8 +147,7 @@ lookup_all (Key, List) ->
                         end
                 end, [], L).
 
-% Cerca un elemento con chiave Key e restituisce il primo trovato o false
-keysearch (Key, []) ->
+keysearch (_Key, []) ->
     false;
 keysearch (Key, [Node | OtherNode]) ->
     case search(Key, Node) of
@@ -170,8 +157,6 @@ keysearch (Key, [Node | OtherNode]) ->
             Node
     end.
 
-% restituisce tutti i nodi figli di Join_node
-% o una lista vuota se Join_node non ha successori
 children (Join_node, List) ->
     Pos_list = element(3, Join_node),
     lists:foldl(fun(Pos, Children)->
@@ -202,7 +187,7 @@ get_beta (Node) ->
     element(2, Node).
 
 update_beta (Beta_new, Node, List) ->
-    {Key, Beta_old, Children, Parent, Pos} = Node,
+    {Key, _Beta_old, Children, Parent, Pos} = Node,
     New_node = {Key, Beta_new, Children, Parent, Pos},
     lists:keyreplace(Pos, 5, List, New_node).
 
@@ -210,7 +195,7 @@ get_key (Node) ->
     element(1, Node).
 
 update_key (NewKey, Node, List) ->
-    {Key, Beta, Children, Parent, Pos} = Node,
+    {_Key, Beta, Children, Parent, Pos} = Node,
     New_node = {NewKey, Beta, Children, Parent, Pos},
     lists:keyreplace(Pos, 5, List, New_node).
 
@@ -223,7 +208,7 @@ have_child (Node) ->
     case Children of
         [] ->
             false;
-        Other ->
+        _Other ->
             true
     end.
 
@@ -248,10 +233,9 @@ remove_node (Node, List) ->
     Tail = lists:nthtail(Pos, List1),
     update_list (Head, Tail, Pos).
 
-update_list (List, [], N) ->
+update_list (List, [], _N) ->
     List;
 update_list (List, [Node | T], N) ->
-%    io:format("Node=~w~n",[Node]),
     New_pos = length(List)+1,
     {Key, Value, Children, Parent, Pos} = Node,
     case Parent > N of
@@ -262,7 +246,6 @@ update_list (List, [Node | T], N) ->
             New_parent = Parent,
             {Key1, Value1, Children1, Parent1, Pos1} = lists:nth(New_parent, List),
             Parent_node = {Key1, Value1, (Children1 -- [Pos])++ [New_pos], Parent1, Pos1},
-        %    io:format(">ParentNode=~w~n",[Parent_node]),
             List1 = lists:keyreplace(Parent, 5, List, Parent_node)
     end,
     New_children = lists:map(fun(X)->
@@ -272,7 +255,6 @@ update_list (List, [Node | T], N) ->
                                end
                        end, Children),
     New_node = {Key, Value, New_children, New_parent, New_pos},
-%    io:format("NewNode=~w~n",[New_node]),
     List2 = List1 ++ [New_node],
     update_list(List2, T, N).
 

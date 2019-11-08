@@ -1,8 +1,5 @@
-%
-% eresye_ontology_resolver.erl
-%
-% ----------------------------------------------------------------------
-%
+%% ----------------------------------------------------------------------
+%%
 %%
 %%  ERESYE, an ERlang Expert SYstem Engine
 %%
@@ -97,7 +94,7 @@ substitute (L, Pred, New) ->
   {ok, Expr} = erl_parse:parse_exprs (Tokens),
   case catch (erl_eval:exprs (Expr, erl_eval:new_bindings ())) of
     {'EXIT', _} -> false;
-    {value, Value, Bindings} -> Value;
+    {value, Value, _Bindings} -> Value;
     _ -> false
   end.
 

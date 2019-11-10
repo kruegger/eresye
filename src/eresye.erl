@@ -190,7 +190,7 @@ wait_retract (Name, Pattern, NeedRetract) when is_tuple (Pattern) ->
                    is_function (X) -> X;
                    true -> fun (_) -> true end
                end || X <- PList],
-    %%DEBUG ("SList = ~p", [SList]),
+    ?DEBUG ("SList = ~p", [SList]),
     [_ | DList] = lists:foldl (fun (X, Sum) ->
                                        lists:concat ([Sum, ",", X])
                                end,
@@ -215,13 +215,13 @@ wait_retract (Name, Pattern, NeedRetract) when is_tuple (Pattern) ->
                "if A -> eresye:retract (Engine, X), ~s Pid ! Pattern__; "
                "   true -> nil end "
                "end.", [PidHash, RetractString])),
-    %%DEBUG ("Fun = ~p", [SFun]),
-    %%DEBUG ("Pattern = ~p", [FinalPattern]),
+    ?DEBUG ("Fun = ~p", [SFun]),
+    ?DEBUG ("Pattern = ~p", [FinalPattern]),
     Fun = evaluate (SFun),
     gen_server:call (Name, {add_rule,
                             {Fun, 0},
                             {FinalPattern, []}}),
-    %%DEBUG ("Rete is ~p", [eresye:get_rete (Name)]),
+    ?DEBUG ("Rete is ~p", [eresye:get_rete (Name)]),
     eresye:assert (Name, {client, PidHash, self (), FunList}),
     receive
         Pat -> Pat
@@ -309,13 +309,14 @@ query_kb (Name, F) when is_function (F) ->
 %%====================================================================
 %% Func: init/1
 %%====================================================================
-init ([EngineName, Ontology]) ->
+init([EngineName, Ontology]) ->
     %% EngineState = [Kb, Alfa, Join, Agenda, State]
     EngineState = [ [],
                     [],
                     eresye_tree_list:new (),
                     eresye_agenda:start (EngineName),
                     Ontology ],
+    ?INFO("ERlang Expert SYstem Engine -> ~p started", [EngineName]),
     {ok, EngineState}.
 
 
@@ -334,7 +335,7 @@ handle_call ({retract, Fact}, _, State) ->
     {reply, ok, NewState};
 
 handle_call ({add_rule, {Fun, Salience}, {PConds, NConds}}, _, State) ->
-    %%DEBUG ("Addrule ~p: ~p", [Fun, {PConds, NConds}]),
+    ?INFO("rule -> ~p : ~p", [Fun, {PConds, NConds}]),
     Rule = {Fun, Salience},
     [_, _, Join | _] = State,
     Root = eresye_tree_list:get_root (Join),
@@ -405,7 +406,7 @@ code_change (_OldVsn, State, _Extra) -> {ok, State}.
 terminate (_Reason, EngineState) ->
     [ _, _, _, AgendaPid, _] = EngineState,
     gen_server:call (AgendaPid, {stop}),
-    %%DEBUG ("Terminating...~p", [self ()]),
+    ?DEBUG ("Terminating...~p", [self ()]),
     ok.
 
 
@@ -418,9 +419,9 @@ terminate (_Reason, EngineState) ->
 initialize_alfa (_, _, []) ->
     nil;
 initialize_alfa (Cond, Tab, [Fact | Other_fact]) ->
-    %%DEBUG ("ALPHA ~p,~p", [Cond, Fact]),
+    ?DEBUG ("ALPHA ~p,~p", [Cond, Fact]),
     Fun = prepare_match_alpha_fun (Cond),
-    %%DEBUG ("Fun ~p", [Fun]),
+    ?DEBUG ("Fun ~p", [Fun]),
     case Fun (Fact) of
         Fact ->
             ets:insert (Tab, Fact),
@@ -434,7 +435,7 @@ prepare_match_alpha_fun (Cond) ->
     FunString = lists:flatten (io_lib:format ("fun (~s = X__x__X) -> X__x__X;"
                                               "    (_)  -> false end.",
                                               [Cond])),
-    %%DEBUG ("Fun String ~p", [FunString]),
+    ?DEBUG ("Fun String ~p", [FunString]),
     evaluate (FunString).
 
 get_abstract_code(Module) ->
@@ -453,7 +454,7 @@ get_abstract_code(Module) ->
 get_conds ({Module, Func}, Ontology, ClauseID) ->
     Form = get_abstract_code(Module),
     Records = get_records (Form, []),
-    %%DEBUG (">> Records ~p", [Records]),
+    ?DEBUG (">> Records ~p", [Records]),
     case search_fun (Form, Func, Records) of
         {error, Msg} ->
             ?ERROR("~s",[Msg]),
@@ -464,14 +465,14 @@ get_conds ({Module, Func}, Ontology, ClauseID) ->
                     ClauseID > 0 -> [lists:nth (ClauseID, CL)];
                     true -> CL
                 end,
-            %%DEBUG ("Clauses ~p", [ClauseList]),
+            ?DEBUG ("Clauses ~p", [ClauseList]),
             SolvedClauses =
                 if
                     Ontology == nil -> ClauseList;
                     true -> eresye_ontology_resolver:resolve_ontology (ClauseList,
                                                                        Ontology)
                 end,
-            %%DEBUG (">>> ~p", [SolvedClauses]),
+            ?DEBUG (">>> ~p", [SolvedClauses]),
             case read_clause(SolvedClauses, [], Records) of
                 {error, Msg2} ->
                     ?ERROR("~s",[Msg2]),
@@ -503,7 +504,6 @@ search_fun ([], _, _RecordList) ->
     {error,"Funzione non trovata"};
 search_fun ([{function, _, Func, _, ClauseList} | _Other], Func, _RecordList) ->
     {ok, ClauseList};
-%% read_clause(ClauseList, [], RecordList);
 search_fun ([_Tuple | Other], Func, RecordList) ->
     search_fun (Other, Func, RecordList).
 
@@ -511,9 +511,8 @@ read_clause([], CondsList, _RecordList)->
     CondsList;
 read_clause([Clause | OtherClause], CondsList, RecordList) ->
     {clause, _, ParamList, GuardList, _} = Clause,
-    %%PosConds = read_param (ParamList),
     PosConds = read_parameters (ParamList, RecordList),
-    %%DEBUG (">>> Positive conditions : ~p", [PosConds]),
+    ?DEBUG (">>> Positive conditions : ~p", [PosConds]),
     NegConds = read_guard (GuardList),
     CondsList1 = lists:append (CondsList,[{PosConds, NegConds}]),
     read_clause (OtherClause, CondsList1, RecordList).
@@ -537,7 +536,7 @@ get_neg_cond (_X, _Nc) ->
 
 read_parameters ([{var, _, _} | Tail], RecordList) ->
     P = extract_parameters (Tail, [], RecordList),
-    %%DEBUG ("read_parameters = ~p", [P]),
+    ?DEBUG ("read_parameters = ~p", [P]),
     Conditions = [ build_string_condition (X, []) || X <- P],
     Conditions.
 
@@ -562,15 +561,15 @@ extract_parameters ([{match, _, {var, _, _}, {record, _, _, _} = R} | Tail],
 
 extract_parameters ([{record, _, RecordName, Condition} | Tail],
                     Acc, RecordList) ->
-    %%DEBUG ("Record: ~p~nCondition: ~p", [RecordName, Condition]),
+    ?DEBUG ("Record: ~p~nCondition: ~p", [RecordName, Condition]),
     RecordDefinition = get_record_def (RecordName, RecordList),
-    %%DEBUG ("Record Definition: ~p", [RecordDefinition]),
+    ?DEBUG ("Record Definition: ~p", [RecordDefinition]),
     RecordDefaults = make_record_default (RecordDefinition, []),
-    %%DEBUG ("Record Defaults: ~p", [RecordDefaults]),
+    ?DEBUG ("Record Defaults: ~p", [RecordDefaults]),
     Pattern = [{atom, 0, RecordName} |
                make_record_pattern (Condition, RecordDefaults,
                                     RecordDefinition)],
-    %%DEBUG ("Record Pattern: ~p", [Pattern]),
+    ?DEBUG ("Record Pattern: ~p", [Pattern]),
     extract_parameters (Tail, [Pattern | Acc], RecordList);
 
 extract_parameters ([{tuple, _, Condition} | Tail], Acc, RecordList) ->
@@ -649,7 +648,7 @@ make_struct (R, Rule, [], _P, Cur_node, nil) ->
             {Join2, Agenda1} = update_new_node (Node, Cur_node, Join1, Agenda);
         Node ->
             {Fun, _Salience} = Rule,
-            Key1 =element(1, Node),
+            Key1 = element(1, Node),
             Sal = element(2, element(2, Key1)),
             ?DEBUG(">> Rule (~w) already present ",[Fun]),
             ?DEBUG(">> with salience = ~w",[Sal]),
@@ -1019,8 +1018,6 @@ retract_fact (R, Fact) ->
         false ->
             R
     end.
-
-
 
 check_cond (R, [], {_Fact, _Sign}) -> R;
 check_cond (R, [{_C1, Tab, Alfa_fun} | T], {Fact, Sign} ) ->

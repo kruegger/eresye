@@ -52,23 +52,17 @@
 %%====================================================================
 compile (FileName, _Options) ->
     {ok, AbstractErlangForm} = epp:parse_file (FileName ++ ".onto", "", []),
-    %%?DEBUG ("~w", [AbstractErlangForm]),
     {ok, Classes} = compile_lines ([], list_to_atom (FileName),
                                    AbstractErlangForm),
 
-    %%?DEBUG ("~p", [Classes]),
     NewClasses = resolve_inheritance (Classes),
-    %%?DEBUG ("~p", [NewClasses]),
     IsAHierarchy = generate_hierarchy_tree ([], Classes, Classes),
-    %%?DEBUG ("~p", [IsAHierarchy]),
     FatherOfHierarchy = reverse_hierarchy_tree ([], IsAHierarchy, IsAHierarchy),
-    %%?DEBUG ("~p", [FatherOfHierarchy]),
 
     IncludeLines = generate_include_file (NewClasses),
     {ok, IncludeFile} = file:open (FileName ++ ".hrl", [write]),
     io:format(IncludeFile, "~s", [IncludeLines]),
     file:close (IncludeFile),
-    %%
 
     IsClassLines = generate_is_class ([], IsAHierarchy),
     IsALines = generate_is_a ([], IsAHierarchy),
@@ -76,7 +70,6 @@ compile (FileName, _Options) ->
         generate_cast ({[],[]}, FatherOfHierarchy, NewClasses),
     ChildOfLines = generate_childof ([], FatherOfHierarchy),
 
-    %%
     OntologyFileName = FileName,
     {ok, ConversionFile} = file:open (OntologyFileName ++ ".erl", [write]),
     io:format (ConversionFile, "-module (~s).~n", [OntologyFileName]),
@@ -189,7 +182,7 @@ compile_properties (Acc, ClassName, [H|T]) ->
 compile_property (_ClassName,
                   {match, _, {atom, _, FieldName}, FieldDef}) ->
     L = cons_to_erl_list (FieldDef),
-    %%?DEBUG ("~p", [L]),
+    ?DEBUG ("~p", [L]),
     [FieldType, FieldRequirement, Default |_] = L,
     #ontology_property {name = FieldName,
                         type = FieldType,
@@ -475,13 +468,13 @@ generate_translation_lines (SourceClass, DestinationClass) ->
                                          SourceClass#ontology_class.name,
                                          X#ontology_property.name]))
           || X <- DestinationClass#ontology_class.properties],
-    %%?DEBUG ("~p", [Lines]),
+    ?DEBUG ("~p", [Lines]),
     XLines = lists:foldl (fun (X, Sum) ->
                                   lists:concat ([Sum, ",\n", X])
                           end,
                           "",
                           Lines),
-    %%?DEBUG ("~p", [XLines]),
+    ?DEBUG ("~p", [XLines]),
     [_,_ | YLines] = XLines,
     Head = lists:flatten (
              io_lib:format ("'~s' (X = #'~s'{}) ->\n  #'~s'{\n",

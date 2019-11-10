@@ -88,8 +88,7 @@ addActivation (Agenda, Rule, Args) ->
     addActivation(Agenda, Rule, Args, 0).
 
 addActivation (Agenda, Rule, Args, Salience) ->
-    %%io:format("addActivation>Agenda=~w~nRule=~w~nArgs=~w~n",
-    %%          [Agenda,Rule,Args]),
+    ?DEBUG("addActivation>Agenda=~w~nRule=~w~nArgs=~w", [Agenda,Rule,Args]),
     gen_server:call (Agenda, {add_activation, Rule, Args, Salience}),
     Agenda.
 
@@ -113,8 +112,7 @@ getRulesFired (Agenda) ->
 %% Remove activation with id='Id' or
 %% all activation whose id is in the list passed as argument
 deleteActivation (Agenda, Ids) ->
-    %%?DEBUG("deleteActivation>Agenda=~w~nRule=~w",
-    %%          [Agenda, Ids]),
+    ?DEBUG("deleteActivation>Agenda=~w~nRule=~w", [Agenda, Ids]),
     gen_server:call (Agenda, {delete_activation, Ids}),
     Agenda.
 
@@ -187,7 +185,7 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 terminate(_Reason, State) ->
     {_, _, ExecutorPid, _, _} = State,
     ExecutorPid ! {stop},
-    %%?DEBUG ("Terminating...~p", [self ()]),
+    ?DEBUG ("Terminating...~p", [self ()]),
     ok.
 
 
@@ -202,7 +200,7 @@ handle_call ({get_rules_fired}, _, State) ->
 
 handle_call ({add_activation, Rule, Args, Salience}, _From, State) ->
     {Strategy, RuleList, ExecutorPid, ExecState, Id} = State,
-    %%?DEBUG("addActivation>Rule=~w~nArgs=~w",[Rule,Args]),
+    ?DEBUG("addActivation>Rule=~w~nArgs=~w",[Rule,Args]),
     NewRuleList =
         case Strategy of
             depth -> depthAdd(RuleList, Rule, Args, Salience, Id);
@@ -262,7 +260,7 @@ handle_call ({get_activation, {Rule, Args}}, _From, Agenda) ->
     %% Rulle = fun(...)
     {_, RuleList, _, _, _} = Agenda,
     ActList = proplists:lookup_all(Rule, RuleList),
-    %%?DEBUG ("get =~p, ~p. Res = ~p", [Rule, RuleList, ActList]),
+    ?DEBUG ("get =~p, ~p. Res = ~p", [Rule, RuleList, ActList]),
     Reply =
         case lists:keysearch(Args, 2, ActList) of
             {value, {_, _, _, Id}}->
@@ -283,7 +281,7 @@ handle_call ({get_activation_from_name, Rule}, _From, Agenda) ->
             false ->
                 false
         end,
-    %%?DEBUG ("Rule = ~p~nRuleList = ~p~nRes = ~p", [Rule, RuleList, Reply]),
+    ?DEBUG ("Rule = ~p~nRuleList = ~p~nRes = ~p", [Rule, RuleList, Reply]),
     {reply, Reply, Agenda};
 
 
@@ -498,7 +496,7 @@ fifoOrder (_Act1, _Act2) ->
 executor (EngineName) ->
     receive
         {exec, From, R} ->
-            %%?DEBUG ("Executing rule ~p", [R]),
+            ?DEBUG ("Executing rule ~p", [R]),
             {Mod, Fun} =
                 case R of
                     {{M, F}, _, _, _} -> {M, F};

@@ -5,12 +5,14 @@ VSN=$(ERESYE_VSN)
 
 MODULES=auto	\
 	cannibals	\
+	journal	\
 	journal_sample	\
 	phil	\
 	prodcons	\
 	relatives	\
 	sample	\
 	sieve	\
+	wine	\
 	wine_sample
 
 EBIN_FILES=$(MODULES:%=../ebin/%.$(EMULATOR))
